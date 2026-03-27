@@ -19,21 +19,22 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ CORS (PRODUCTION READY)
+// ✅ CORS FIX (FINAL)
 const allowedOrigins = [
-  "http://localhost:5173", // local
-  "https://quiz-frontend-rouge.vercel.app/",
+  "http://localhost:5173",
+  "https://quiz-frontend-rouge.vercel.app", 
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps / Postman)
+      // Allow requests with no origin (Postman, mobile apps)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       } else {
+        console.log("❌ Blocked by CORS:", origin);
         return callback(new Error("CORS not allowed"));
       }
     },
@@ -65,7 +66,7 @@ app.use((req, res) => {
 
 // 🔥 Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error("🔥 ERROR:", err.message);
   res.status(500).json({
     message: err.message || "Server error",
   });
