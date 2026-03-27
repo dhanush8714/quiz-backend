@@ -33,8 +33,7 @@ app.use(
   })
 );
 
-// ❌ REMOVED (THIS WAS CRASHING YOUR SERVER)
-// app.options("*", cors());
+
 
 // 🌍 Middleware
 app.use(express.json());
