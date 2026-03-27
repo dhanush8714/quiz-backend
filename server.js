@@ -18,7 +18,7 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ FINAL CORS FIX
+// ✅ CORS CONFIG
 const allowedOrigins = [
   "http://localhost:5173",
   "https://quiz-frontend-rouge.vercel.app",
@@ -27,14 +27,14 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
-// ✅ HANDLE PREFLIGHT REQUESTS (VERY IMPORTANT)
-app.options("*", cors());
+// ❌ REMOVED (THIS WAS CRASHING YOUR SERVER)
+// app.options("*", cors());
 
 // 🌍 Middleware
 app.use(express.json());
@@ -53,7 +53,7 @@ app.get("/", (req, res) => {
   res.send("Quiz App API is running 🚀");
 });
 
-// 404
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
@@ -66,10 +66,15 @@ app.use((err, req, res, next) => {
   });
 });
 
-// DB
+// ✅ DB CONNECTION
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    console.log("🔌 Connecting to MongoDB...");
+    
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 30000,
+    });
+
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);
@@ -77,12 +82,12 @@ const connectDB = async () => {
   }
 };
 
-// Start server
+// ✅ START SERVER AFTER DB CONNECTS
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    await connectDB(); // ✅ connect first
+    await connectDB(); // connect first
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
