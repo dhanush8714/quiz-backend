@@ -11,6 +11,8 @@ const generateToken = (id) => {
 // 🟢 Register User
 export const registerUser = async (req, res) => {
   try {
+    console.log("REGISTER BODY:", req.body);
+
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
@@ -20,13 +22,13 @@ export const registerUser = async (req, res) => {
     }
 
     const userExists = await User.findOne({ email });
+
     if (userExists) {
       return res.status(400).json({
         message: "User already exists",
       });
     }
 
-    // ❗ DO NOT hash here (handled in model)
     const user = await User.create({
       name,
       email,
@@ -43,7 +45,7 @@ export const registerUser = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("REGISTER ERROR:", error); // 🔥 FULL ERROR
     res.status(500).json({ message: error.message });
   }
 };
@@ -51,7 +53,15 @@ export const registerUser = async (req, res) => {
 // 🟢 Login User
 export const loginUser = async (req, res) => {
   try {
+    console.log("LOGIN BODY:", req.body);
+
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Please provide email and password",
+      });
+    }
 
     const user = await User.findOne({ email });
 
@@ -68,82 +78,107 @@ export const loginUser = async (req, res) => {
       res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("LOGIN ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
 // 👑 Make Admin
 export const makeAdmin = async (req, res) => {
-  const user = await User.findById(req.params.id);
+  try {
+    const user = await User.findById(req.params.id);
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.isAdmin = true;
+    await user.save();
+
+    res.json({ message: "User promoted to admin" });
+  } catch (error) {
+    console.error("MAKE ADMIN ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
-
-  user.isAdmin = true;
-  await user.save();
-
-  res.json({ message: "User promoted to admin" });
 };
 
 // 👥 Get users
 export const getUsers = async (req, res) => {
-  const users = await User.find().select("-password");
-  res.json(users);
+  try {
+    const users = await User.find().select("-password");
+    res.json(users);
+  } catch (error) {
+    console.error("GET USERS ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // 🖼️ Upload Profile Image
 export const uploadProfileImage = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "No image uploaded" });
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    user.profileImage = `/uploads/${req.file.filename}`;
+    await user.save();
+
+    res.json({
+      profileImage: user.profileImage,
+    });
+  } catch (error) {
+    console.error("UPLOAD IMAGE ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
-
-  const user = await User.findById(req.user._id);
-
-  user.profileImage = `/uploads/${req.file.filename}`;
-  await user.save();
-
-  res.json({
-    profileImage: user.profileImage,
-  });
 };
 
 // ✏️ Update Profile
 export const updateProfile = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      profileImage: user.profileImage,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error("UPDATE PROFILE ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
-
-  user.name = req.body.name || user.name;
-  user.email = req.body.email || user.email;
-
-  await user.save();
-
-  res.json({
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    isAdmin: user.isAdmin,
-    profileImage: user.profileImage,
-    token: generateToken(user._id),
-  });
 };
 
 // ❌ Delete Profile Image
 export const deleteProfileImage = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.profileImage = "";
+    await user.save();
+
+    res.json({ message: "Profile image removed" });
+  } catch (error) {
+    console.error("DELETE IMAGE ERROR:", error);
+    res.status(500).json({ message: error.message });
   }
-
-  user.profileImage = "";
-  await user.save();
-
-  res.json({ message: "Profile image removed" });
 };
 
 // 🔻 Remove Admin
@@ -166,7 +201,7 @@ export const removeAdmin = async (req, res) => {
 
     res.json({ message: "Admin role removed successfully" });
   } catch (error) {
-    console.error(error.message);
+    console.error("REMOVE ADMIN ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
