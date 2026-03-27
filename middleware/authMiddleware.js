@@ -1,50 +1,43 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
-const AuthContext = createContext();
+// 🔐 Protect routes (logged-in users only)
+export const protect = async (req, res, next) => {
+  try {
+    let token;
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+    if (req.headers.authorization?.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1];
 
-  // 🔁 Load user on refresh
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
 
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      const user = await User.findById(decoded.id).select("-password");
+
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      req.user = user;
+
+      next(); // ✅ VERY IMPORTANT
+    } else {
+      return res.status(401).json({ message: "Not authorized, no token" });
     }
-
-    setLoading(false);
-  }, []);
-
-  // ✅ Login
-  function login(data) {
-    localStorage.setItem("user", JSON.stringify(data));
-    setUser(data);
+  } catch (error) {
+    console.error("🔥 AUTH ERROR:", error);
+    return res.status(401).json({ message: "Token failed" });
   }
+};
 
-  // ✅ Logout
-  function logout() {
-    localStorage.removeItem("user");
-    setUser(null);
+// 🔒 Admin-only access
+export const adminOnly = (req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    next(); // ✅ IMPORTANT
+  } else {
+    return res.status(403).json({ message: "Admin access only" });
   }
-
-  // 🔁 Refresh user after update
-  function refreshUser() {
-    const storedUser = localStorage.getItem("user");
-
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }
-
-  return (
-    <AuthContext.Provider
-      value={{ user, setUser, loading, login, logout, refreshUser }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export const useAuth = () => useContext(AuthContext);
+};
