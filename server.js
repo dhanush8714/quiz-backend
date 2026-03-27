@@ -22,7 +22,7 @@ const __dirname = path.dirname(__filename);
 // ✅ CORS (PRODUCTION READY)
 const allowedOrigins = [
   "http://localhost:5173", // local
-  "https://your-frontend.vercel.app", // 🔥 replace later
+  "https://quiz-frontend-rouge.vercel.app/",
 ];
 
 app.use(
