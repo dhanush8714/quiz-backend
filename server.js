@@ -10,23 +10,42 @@ import userRoutes from "./routes/userRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import attemptRoutes from "./routes/attemptRoutes.js";
 
-// Load env variables
+// Load env
 dotenv.config();
 
 const app = express();
 
-// Fix __dirname for ES modules
+// Fix __dirname (ES modules)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ✅ CORS (PRODUCTION READY)
+const allowedOrigins = [
+  "http://localhost:5173", // local
+  "https://your-frontend.vercel.app", // 🔥 replace later
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps / Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("CORS not allowed"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 // 🌍 Middleware
-app.use(cors({
-  origin: "*",   // allow all (you can restrict later)
-}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🖼 Serve uploaded files
+// 🖼 Static uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // 🚏 Routes
@@ -44,7 +63,7 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-// 🔥 Error handler
+// 🔥 Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -52,7 +71,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 🗄 MongoDB connection (IMPROVED)
+// 🗄 MongoDB connection
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI);
@@ -67,6 +86,6 @@ const connectDB = async () => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, async () => {
-  await connectDB(); // connect DB before running
+  await connectDB();
   console.log(`🚀 Server running on port ${PORT}`);
 });
