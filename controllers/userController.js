@@ -45,7 +45,7 @@ export const registerUser = async (req, res) => {
       token: generateToken(user._id),
     });
   } catch (error) {
-    console.error("REGISTER ERROR:", error); // 🔥 FULL ERROR
+    console.error("REGISTER ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -86,6 +86,10 @@ export const loginUser = async (req, res) => {
 // 👑 Make Admin
 export const makeAdmin = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -105,6 +109,10 @@ export const makeAdmin = async (req, res) => {
 // 👥 Get users
 export const getUsers = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     const users = await User.find().select("-password");
     res.json(users);
   } catch (error) {
@@ -116,11 +124,19 @@ export const getUsers = async (req, res) => {
 // 🖼️ Upload Profile Image
 export const uploadProfileImage = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     if (!req.file) {
       return res.status(400).json({ message: "No image uploaded" });
     }
 
     const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     user.profileImage = `/uploads/${req.file.filename}`;
     await user.save();
@@ -137,6 +153,10 @@ export const uploadProfileImage = async (req, res) => {
 // ✏️ Update Profile
 export const updateProfile = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -165,6 +185,10 @@ export const updateProfile = async (req, res) => {
 // ❌ Delete Profile Image
 export const deleteProfileImage = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -184,6 +208,10 @@ export const deleteProfileImage = async (req, res) => {
 // 🔻 Remove Admin
 export const removeAdmin = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -191,9 +219,9 @@ export const removeAdmin = async (req, res) => {
     }
 
     if (user._id.toString() === req.user._id.toString()) {
-      return res
-        .status(400)
-        .json({ message: "You cannot remove your own admin role" });
+      return res.status(400).json({
+        message: "You cannot remove your own admin role",
+      });
     }
 
     user.isAdmin = false;
