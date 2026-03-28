@@ -18,7 +18,7 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ CORS CONFIG
+// ✅ CORS CONFIG (SAFE VERSION)
 const allowedOrigins = [
   "http://localhost:5173",
   "https://quiz-frontend-rouge.vercel.app",
@@ -26,23 +26,30 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
     credentials: true,
   })
 );
-
-
 
 // 🌍 Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
+// 📁 Static files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// ✅ TEST ROUTE (VERY IMPORTANT FOR DEBUG)
+app.get("/api/test", (req, res) => {
+  res.send("API working ✅");
+});
+
+// 🚀 Routes
 app.use("/api/users", userRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/attempts", attemptRoutes);
@@ -52,14 +59,14 @@ app.get("/", (req, res) => {
   res.send("Quiz App API is running 🚀");
 });
 
-// 404 handler
+// ❌ 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-// Error handler
+// 🔥 GLOBAL ERROR HANDLER (FULL ERROR)
 app.use((err, req, res, next) => {
-  console.error("🔥 ERROR:", err.message);
+  console.error("🔥 FULL ERROR:", err);
   res.status(500).json({
     message: err.message || "Server error",
   });
@@ -69,29 +76,30 @@ app.use((err, req, res, next) => {
 const connectDB = async () => {
   try {
     console.log("🔌 Connecting to MongoDB...");
-    
+
     const conn = await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 30000,
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
+    console.error("❌ MongoDB connection failed:", error);
     process.exit(1);
   }
 };
 
-// ✅ START SERVER AFTER DB CONNECTS
+// ✅ START SERVER
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    await connectDB(); // connect first
+    await connectDB();
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Server failed to start:", error.message);
+    console.error("❌ Server failed to start:", error);
   }
 };
 

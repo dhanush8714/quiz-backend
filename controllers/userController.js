@@ -227,7 +227,7 @@ export const removeAdmin = async (req, res) => {
     user.isAdmin = false;
     await user.save();
 
-    res.json({ message: "Admin role removed successfully" });
+    res.json({ message: "Admin removed successfully" });
   } catch (error) {
     console.error("REMOVE ADMIN ERROR:", error);
     res.status(500).json({ message: error.message });

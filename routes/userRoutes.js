@@ -18,8 +18,10 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
-// 🔐 Admin-only routes
+// 👥 Get all users (admin only)
 router.get("/", protect, adminOnly, getUsers);
+
+// 👑 Admin controls
 router.put("/make-admin/:id", protect, adminOnly, makeAdmin);
 router.put("/remove-admin/:id", protect, adminOnly, removeAdmin);
 
@@ -27,11 +29,11 @@ router.put("/remove-admin/:id", protect, adminOnly, removeAdmin);
 router.put(
   "/profile-image",
   protect,
-  upload.single("image"), // field name must match frontend
+  upload.single("image"),
   uploadProfileImage
 );
 
-// 🧾 Profile update
+// 🧾 Profile update (normal user allowed)
 router.put("/profile", protect, updateProfile);
 
 // ❌ Delete profile image
