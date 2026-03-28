@@ -36,11 +36,4 @@ const questionSchema = new mongoose.Schema(
   }
 );
 
-// ✅ Optional: prevent sending correct answer to frontend
-questionSchema.methods.toJSON = function () {
-  const obj = this.toObject();
-  delete obj.correctAnswer;
-  return obj;
-};
-
 export default mongoose.model("Question", questionSchema);

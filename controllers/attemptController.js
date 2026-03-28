@@ -3,12 +3,14 @@ import Attempt from "../models/Attempt.js";
 // ➕ Save quiz attempt
 export const addAttempt = async (req, res) => {
   try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
     const { category, score, total } = req.body;
 
     if (!category || score == null || total == null) {
-      return res.status(400).json({
-        message: "Please provide all fields",
-      });
+      return res.status(400).json({ message: "Please provide all fields" });
     }
 
     const attempt = await Attempt.create({
@@ -20,22 +22,32 @@ export const addAttempt = async (req, res) => {
 
     res.status(201).json(attempt);
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("🔥 ADD ATTEMPT ERROR:", error);
+    res.status(500).json({ message: error.message || "Server error" });
   }
 };
 
 // 📥 Get logged-in user's attempts
 export const getMyAttempts = async (req, res) => {
   try {
-    const attempts = await Attempt.find({
-      user: req.user._id,
-    }).sort({ createdAt: -1 });
+    console.log("USER:", req.user); // 🔍 debug
 
-    res.json(attempts);
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const userId = req.user._id;
+
+    const attempts = await Attempt.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json(attempts);
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("🔥 GET ATTEMPTS ERROR:", error); // 🔥 IMPORTANT
+    return res.status(500).json({
+      message: error.message || "Server error",
+    });
   }
 };
 
@@ -52,15 +64,17 @@ export const getGlobalLeaderboard = async (req, res) => {
       },
       { $sort: { bestScore: -1 } },
       { $limit: 20 },
+
       {
         $lookup: {
-          from: "users", // collection name (correct ✅)
+          from: "users",
           localField: "_id",
           foreignField: "_id",
           as: "user",
         },
       },
       { $unwind: "$user" },
+
       {
         $project: {
           _id: 0,
@@ -73,9 +87,9 @@ export const getGlobalLeaderboard = async (req, res) => {
       },
     ]);
 
-    res.json(leaderboard);
+    res.json(leaderboard || []);
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("🔥 LEADERBOARD ERROR:", error);
+    res.status(500).json({ message: error.message || "Server error" });
   }
 };

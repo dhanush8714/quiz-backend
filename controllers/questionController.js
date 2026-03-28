@@ -3,15 +3,18 @@ import Question from "../models/Question.js";
 // 🌍 Public – get questions by category
 export const getQuestions = async (req, res) => {
   try {
-    const category = req.params.category.trim();
+    const category = (req.params.category || "").trim();
 
-    const questions = await Question.find({ category })
-      .sort({ createdAt: -1 });
+    if (!category) {
+      return res.status(400).json({ message: "Category is required" });
+    }
+
+    const questions = await Question.find({ category }).sort({ createdAt: -1 });
 
     res.json(questions);
   } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("GET QUESTIONS ERROR:", error);
+    res.status(500).json({ message: error.message || "Server error" });
   }
 };
 

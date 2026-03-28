@@ -8,13 +8,14 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// 📝 Add attempt (logged-in users)
+// 📝 Add attempt
 router.post("/", protect, addAttempt);
 
-// 📊 My attempts
-router.get("/me", protect, getMyAttempts);
+// 📊 My attempts (support BOTH routes)
+router.get("/", protect, getMyAttempts);     // ✅ important
+router.get("/me", protect, getMyAttempts);   // optional
 
-// 🌍 Global leaderboard (PUBLIC)
+// 🌍 Leaderboard
 router.get("/leaderboard", getGlobalLeaderboard);
 
 export default router;
