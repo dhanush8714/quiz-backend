@@ -29,10 +29,9 @@ const attemptSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ Optional: populate user automatically
-attemptSchema.pre(/^find/, function (next) {
-  this.populate("user", "name email"); // only needed fields
-  next();
-});
+// ✅ SAFE METHOD (OPTIONAL POPULATE WHEN NEEDED)
+attemptSchema.methods.populateUser = function () {
+  return this.populate("user", "name email");
+};
 
 export default mongoose.model("Attempt", attemptSchema);
